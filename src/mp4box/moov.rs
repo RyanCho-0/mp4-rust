@@ -20,9 +20,6 @@ pub struct MoovBox {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub udta: Option<UdtaBox>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub pssh: Option<PsshBox>,
 }
 
 impl MoovBox {
@@ -40,9 +37,6 @@ impl MoovBox {
         }
         if let Some(udta) = &self.udta {
             size += udta.box_size();
-        }
-        if let Some(pssh) = &self.pssh {
-            size += pssh.box_size();
         }
         size
     }
@@ -127,7 +121,6 @@ impl<R: Read + Seek> ReadBox<&mut R> for MoovBox {
             udta,
             mvex,
             traks,
-            pssh: None,
         })
     }
 }
@@ -147,56 +140,53 @@ impl<W: Write> WriteBox<&mut W> for MoovBox {
         if let Some(udta) = &self.udta {
             udta.write_box(writer)?;
         }
-        if let Some(pssh) = &self.pssh {
-            pssh.write_box(writer)?;
-        }
         Ok(0)
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::mp4box::BoxHeader;
-//     use std::io::Cursor;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::mp4box::BoxHeader;
+    use std::io::Cursor;
 
-//     #[test]
-//     fn test_moov() {
-//         let src_box = MoovBox {
-//             mvhd: MvhdBox::default(),
-//             mvex: None, // XXX mvex is not written currently
-//             traks: vec![],
-//             meta: Some(MetaBox::default()),
-//             udta: Some(UdtaBox::default()),
-//         };
+    #[test]
+    fn test_moov() {
+        let src_box = MoovBox {
+            mvhd: MvhdBox::default(),
+            mvex: None, // XXX mvex is not written currently
+            traks: vec![],
+            meta: Some(MetaBox::default()),
+            udta: Some(UdtaBox::default()),
+        };
 
-//         let mut buf = Vec::new();
-//         src_box.write_box(&mut buf).unwrap();
-//         assert_eq!(buf.len(), src_box.box_size() as usize);
+        let mut buf = Vec::new();
+        src_box.write_box(&mut buf).unwrap();
+        assert_eq!(buf.len(), src_box.box_size() as usize);
 
-//         let mut reader = Cursor::new(&buf);
-//         let header = BoxHeader::read(&mut reader).unwrap();
-//         assert_eq!(header.name, BoxType::MoovBox);
-//         assert_eq!(header.size, src_box.box_size());
+        let mut reader = Cursor::new(&buf);
+        let header = BoxHeader::read(&mut reader).unwrap();
+        assert_eq!(header.name, BoxType::MoovBox);
+        assert_eq!(header.size, src_box.box_size());
 
-//         let dst_box = MoovBox::read_box(&mut reader, header.size).unwrap();
-//         assert_eq!(dst_box, src_box);
-//     }
+        let dst_box = MoovBox::read_box(&mut reader, header.size).unwrap();
+        assert_eq!(dst_box, src_box);
+    }
 
-//     #[test]
-//     fn test_moov_empty() {
-//         let src_box = MoovBox::default();
+    #[test]
+    fn test_moov_empty() {
+        let src_box = MoovBox::default();
 
-//         let mut buf = Vec::new();
-//         src_box.write_box(&mut buf).unwrap();
-//         assert_eq!(buf.len(), src_box.box_size() as usize);
+        let mut buf = Vec::new();
+        src_box.write_box(&mut buf).unwrap();
+        assert_eq!(buf.len(), src_box.box_size() as usize);
 
-//         let mut reader = Cursor::new(&buf);
-//         let header = BoxHeader::read(&mut reader).unwrap();
-//         assert_eq!(header.name, BoxType::MoovBox);
-//         assert_eq!(header.size, src_box.box_size());
+        let mut reader = Cursor::new(&buf);
+        let header = BoxHeader::read(&mut reader).unwrap();
+        assert_eq!(header.name, BoxType::MoovBox);
+        assert_eq!(header.size, src_box.box_size());
 
-//         let dst_box = MoovBox::read_box(&mut reader, header.size).unwrap();
-//         assert_eq!(dst_box, src_box);
-//     }
-// }
+        let dst_box = MoovBox::read_box(&mut reader, header.size).unwrap();
+        assert_eq!(dst_box, src_box);
+    }
+}
